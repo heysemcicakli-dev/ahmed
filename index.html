@@ -6,133 +6,147 @@
 <title>نظام الأستاذ عمر - سحابي</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 
-<!-- Firebase Core SDK -->
+<!-- Firebase SDK (Bağlantı Garantili Sürüm) -->
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
 <style>
-:root { --p:#1a5276; --g:#c9a84c; --bg:#f4f7f6; --s-w:260px; }
+:root { --p:#1a5276; --g:#c9a84c; --bg:#f0f2f5; --sw:260px; }
 * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
-body { background:var(--bg); direction:rtl; }
+body { background:var(--bg); direction:rtl; overflow-x:hidden; }
 
-/* Loader */
-#loader { position:fixed; inset:0; background:white; z-index:9999; display:flex; align-items:center; justify-content:center; flex-direction:column; font-weight:700; }
-.spinner { width:40px; height:40px; border:4px solid #eee; border-top:4px solid var(--p); border-radius:50%; animation:spin 1s linear infinite; margin-bottom:15px; }
+/* Bekleme Ekranı */
+#loader { position:fixed; inset:0; background:white; z-index:10000; display:flex; align-items:center; justify-content:center; flex-direction:column; transition:0.5s; }
+.spinner { width:45px; height:45px; border:5px solid #f3f3f3; border-top:5px solid var(--p); border-radius:50%; animation:spin 1s linear infinite; }
 @keyframes spin { 100% { transform:rotate(360deg); } }
 
-/* Auth */
-#auth-w { position:fixed; inset:0; background:linear-gradient(135deg,#0d2137,#1a5276); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px; }
-.auth-c { background:white; padding:30px; border-radius:20px; width:100%; max-width:400px; box-shadow:0 10px 30px rgba(0,0,0,0.3); }
-.tab-b { display:flex; background:#eee; border-radius:10px; padding:5px; margin-bottom:20px; }
-.tab { flex:1; border:none; padding:10px; cursor:pointer; border-radius:8px; font-weight:700; background:none; }
-.tab.active { background:white; color:var(--p); box-shadow:0 2px 5px rgba(0,0,0,0.1); }
-.inp { width:100%; padding:12px; margin-bottom:15px; border:2px solid #eee; border-radius:10px; outline:none; font-size:14px; }
-.btn { width:100%; padding:12px; border:none; border-radius:10px; background:var(--p); color:white; font-weight:700; cursor:pointer; }
+/* Giriş Ekranı */
+#auth-w { position:fixed; inset:0; background:linear-gradient(135deg,#0d2137,#1a5276); display:flex; align-items:center; justify-content:center; z-index:9000; padding:20px; }
+.auth-c { background:white; padding:30px; border-radius:24px; width:100%; max-width:400px; box-shadow:0 20px 50px rgba(0,0,0,0.3); }
+.tabs { display:flex; background:#eee; border-radius:12px; padding:5px; margin-bottom:20px; }
+.tab { flex:1; border:none; padding:12px; cursor:pointer; border-radius:10px; font-weight:700; background:none; transition:0.3s; }
+.tab.active { background:white; color:var(--p); box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+.inp { width:100%; padding:14px; margin-bottom:15px; border:2px solid #eee; border-radius:12px; outline:none; font-size:14px; transition:0.3s; }
+.inp:focus { border-color:var(--p); }
+.btn { width:100%; padding:14px; border:none; border-radius:12px; background:var(--p); color:white; font-weight:700; cursor:pointer; font-size:16px; }
 
-/* Main App */
-#app { display:none; }
-.sidebar { position:fixed; top:0; right:0; bottom:0; width:var(--s-w); background:#0d2137; color:white; padding:20px; z-index:100; transition:0.3s; }
-.main { margin-right:var(--s-w); padding:20px; transition:0.3s; }
-.card { background:white; padding:20px; border-radius:15px; box-shadow:0 4px 10px rgba(0,0,0,0.05); margin-bottom:20px; }
+/* Ana Uygulama */
+#app { display:none; min-height:100vh; }
+.sidebar { position:fixed; top:0; right:0; bottom:0; width:var(--sw); background:#0d2137; color:white; padding:25px; z-index:1000; transition:0.3s; }
+.main { margin-right:var(--sw); padding:25px; transition:0.3s; }
+.card { background:white; padding:20px; border-radius:18px; box-shadow:0 5px 15px rgba(0,0,0,0.05); margin-bottom:20px; }
 table { width:100%; border-collapse:collapse; margin-top:10px; }
-th, td { padding:12px; text-align:right; border-bottom:1px solid #eee; font-size:14px; }
-.hw-i { background:#f0f7ff; padding:10px; border-radius:10px; margin-bottom:10px; border-right:4px solid var(--p); }
+th, td { padding:14px; text-align:right; border-bottom:1px solid #f0f0f0; font-size:14px; }
+.hw-item { background:#f8fbff; padding:15px; border-radius:12px; margin-bottom:12px; border-right:5px solid var(--p); }
 
 @media (max-width:768px) {
     .sidebar { transform:translateX(100%); }
     .sidebar.open { transform:translateX(0); }
     .main { margin-right:0; }
-    .mob-h { display:flex; background:var(--p); color:white; padding:15px; justify-content:space-between; align-items:center; }
+    .mobile-nav { display:flex; background:var(--p); color:white; padding:15px; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:999; }
 }
 
-/* Toast */
-#toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(100px); background:#333; color:white; padding:10px 20px; border-radius:20px; transition:0.3s; z-index:10000; }
+#toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(100px); background:#333; color:white; padding:12px 30px; border-radius:50px; transition:0.4s; z-index:11000; font-size:14px; }
 #toast.show { transform:translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 
-<div id="loader"><div class="spinner"></div>جاري الاتصال بالسحاب...</div>
+<div id="loader">
+    <div class="spinner"></div>
+    <p style="margin-top:20px; color:#666; font-weight:bold;">جاري مزامنة البيانات...</p>
+</div>
+
 <div id="toast"></div>
 
-<!-- Login Section -->
+<!-- Giriş Bölümü -->
 <div id="auth-w">
     <div class="auth-c">
-        <h2 style="text-align:center; color:var(--p); margin-bottom:20px;">📚 نظام الأستاذ عمر</h2>
-        <div class="tab-b">
-            <button class="tab active" onclick="shA('l')">دخول</button>
-            <button class="tab" onclick="shA('r')">جديد</button>
+        <h2 style="text-align:center; color:var(--p); margin-bottom:25px; font-weight:900;">📚 نظام الأستاذ عمر</h2>
+        <div class="tabs">
+            <button class="tab active" id="tab-l" onclick="switchTab('login')">دخول</button>
+            <button class="tab" id="tab-r" onclick="switchTab('reg')">حساب جديد</button>
         </div>
-        <div id="form-l">
-            <input type="text" id="l-id" class="inp" placeholder="الاسم (عمر / omar)">
-            <input type="password" id="l-pw" class="inp" placeholder="كلمة المرور">
-            <button class="btn" onclick="login()">دخول</button>
+        <div id="form-login">
+            <input type="text" id="log-id" class="inp" placeholder="الاسم أو الهاتف (عمر / omar)">
+            <input type="password" id="log-pw" class="inp" placeholder="كلمة المرور">
+            <button class="btn" onclick="doLogin()">دخول للنظام</button>
         </div>
-        <div id="form-r" style="display:none">
-            <input type="text" id="r-n" class="inp" placeholder="الاسم الكامل">
-            <input type="text" id="r-p" class="inp" placeholder="رقم الهاتف">
-            <input type="password" id="r-w" class="inp" placeholder="كلمة المرور">
-            <button class="btn" onclick="reg()">إنشاء الحساب</button>
+        <div id="form-reg" style="display:none">
+            <input type="text" id="reg-n" class="inp" placeholder="اسم الطالب الكامل">
+            <input type="text" id="reg-p" class="inp" placeholder="رقم الهاتف">
+            <input type="password" id="reg-w" class="inp" placeholder="كلمة المرور">
+            <button class="btn" onclick="doReg()">إنشاء حساب الطالب</button>
         </div>
     </div>
 </div>
 
-<!-- App Section -->
+<!-- Uygulama Bölümü -->
 <div id="app">
-    <div class="mob-h" style="display:none">
-        <button onclick="togS(true)" style="background:none; border:none; color:white; font-size:20px;">☰</button>
-        <b>نظام الأستاذ عمر</b>
-        <div style="width:20px"></div>
+    <div class="mobile-nav" style="display:none">
+        <button onclick="togSide(true)" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">☰</button>
+        <b style="font-size:18px">نظام الأستاذ عمر</b>
+        <div style="width:24px"></div>
     </div>
 
     <div class="sidebar" id="side">
-        <div style="text-align:center; margin-bottom:30px">
-            <div style="width:60px; height:60px; background:var(--g); border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:900;" id="av">ع</div>
-            <h3 id="u-name">...</h3>
-            <small id="u-role" style="color:#aaa"></small>
+        <div style="text-align:center; margin-bottom:40px">
+            <div style="width:70px; height:70px; background:var(--g); border-radius:50%; margin:0 auto 15px; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:900; color:white; box-shadow:0 5px 15px rgba(0,0,0,0.2);" id="av-txt">ع</div>
+            <h3 id="me-name" style="font-size:18px">...</h3>
+            <span id="me-role" style="font-size:12px; opacity:0.6; background:rgba(255,255,255,0.1); padding:2px 10px; border-radius:10px; margin-top:5px; display:inline-block;"></span>
         </div>
-        <div id="nav"></div>
-        <button onclick="location.reload()" style="margin-top:30px; width:100%; background:none; border:1px solid #ff8a80; color:#ff8a80; padding:10px; border-radius:10px; cursor:pointer;">🚪 خروج</button>
+        <div id="menu">
+            <!-- Menü otomatik yüklenecek -->
+        </div>
+        <button onclick="location.reload()" style="margin-top:40px; width:100%; background:rgba(255,138,128,0.1); border:1px solid #ff8a80; color:#ff8a80; padding:12px; border-radius:12px; cursor:pointer; font-weight:bold;">🚪 تسجيل الخروج</button>
     </div>
 
-    <div class="main" onclick="togS(false)">
-        <!-- Admin View -->
-        <div id="p-adm" class="pg" style="display:none">
+    <div class="main" onclick="togSide(false)">
+        <!-- Admin Paneli -->
+        <div id="view-admin" class="page" style="display:none">
             <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center">
-                    <h3>👥 الطلاب</h3>
-                    <button class="btn" style="width:auto; padding:5px 15px" onclick="setSt()">إعداد طالب</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                    <h3 style="color:var(--p)">👥 إدارة الطلاب</h3>
+                    <button class="btn" style="width:auto; padding:8px 20px; font-size:13px" onclick="openStSetting()">⚙️ إعدادات الحصص</button>
                 </div>
-                <table>
-                    <thead><tr><th>اسم الطالب</th><th>متبقي</th><th>إجراء</th></tr></thead>
-                    <tbody id="st-list"></tbody>
-                </table>
+                <div style="overflow-x:auto">
+                    <table>
+                        <thead><tr><th>الطالب</th><th>المتبقي</th><th>الإجراء</th></tr></thead>
+                        <tbody id="list-students"></tbody>
+                    </table>
+                </div>
             </div>
             <div class="card">
-                <h3>📝 إرسال واجب</h3>
-                <select id="hw-s" class="inp"></select>
-                <textarea id="hw-t" class="inp" style="height:80px" placeholder="نص الواجب..."></textarea>
-                <button class="btn" onclick="sendHw()">إرسال</button>
+                <h3 style="color:var(--p); margin-bottom:15px">📝 إرسال واجب</h3>
+                <select id="hw-target" class="inp"></select>
+                <textarea id="hw-content" class="inp" style="height:100px; resize:none;" placeholder="اكتب نص الواجب هنا..."></textarea>
+                <button class="btn" onclick="sendHomework()">إرسال الواجب للطالب</button>
             </div>
         </div>
 
-        <!-- Student View -->
-        <div id="p-std" class="pg" style="display:none">
+        <!-- Öğrenci Paneli -->
+        <div id="view-student" class="page" style="display:none">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px">
-                <div class="card" style="text-align:center"><h4>📚 حصص متبقية</h4><h1 id="s-rem" style="color:var(--p)">0</h1></div>
-                <div class="card" style="text-align:center"><h4>💰 الرسوم</h4><h1 id="s-fee" style="color:var(--g)">0</h1></div>
+                <div class="card" style="text-align:center">
+                    <h4 style="color:#666; font-size:13px">الحصص المتبقية</h4>
+                    <h1 id="std-rem" style="color:var(--p); font-size:45px; margin:10px 0">0</h1>
+                </div>
+                <div class="card" style="text-align:center">
+                    <h4 style="color:#666; font-size:13px">الرسوم المستحقة</h4>
+                    <h1 id="std-fee" style="color:var(--g); font-size:45px; margin:10px 0">0</h1>
+                </div>
             </div>
             <div class="card">
-                <h3>📝 واجباتي</h3>
-                <div id="my-hw" style="margin-top:15px"></div>
+                <h3 style="color:var(--p); margin-bottom:20px">📝 سجل الواجبات</h3>
+                <div id="list-homeworks"></div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-// 🔥 Firebase Bilgilerin (Tam ve Doğru)
-const config = {
+// 1. Firebase Bağlantı Bilgileri (Garantili)
+const firebaseConfig = {
   apiKey: "AIzaSyCXuhxjwoxRSje-rL-1kylgWOIUUwnFtZ8",
   authDomain: "bsaer-omar-ahmed.firebaseapp.com",
   databaseURL: "https://bsaer-omar-ahmed-default-rtdb.firebaseio.com",
@@ -142,103 +156,168 @@ const config = {
   appId: "1:246394105206:web:0337e80d87cb8fcc7e9e57"
 };
 
-firebase.initializeApp(config);
+firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let users = {}, stData = {}, hws = {}, me = null;
+let allUsers = {}, allStData = {}, allHws = {}, me = null;
 
-// Real-time Sync (Veri her değiştiğinde burası çalışır)
-db.ref('/').on('value', s => {
-    const data = s.val() || {};
-    users = data.users || {};
-    stData = data.stData || {};
-    hws = data.hws || {};
-    document.getElementById('loader').style.display = 'none';
-    render();
+// 2. Canlı Veri Senkronizasyonu (Hata Yakalamalı)
+db.ref('/').on('value', snapshot => {
+    const data = snapshot.val() || {};
+    allUsers = data.users || {};
+    allStData = data.stData || {};
+    allHws = data.hws || {};
+    
+    // Veri geldiğinde loader'ı kaldır
+    hideLoader();
+    if(me) renderUI();
+}, error => {
+    console.error("Firebase Hatası:", error);
+    hideLoader();
 });
 
-function login() {
-    const id = document.getElementById('l-id').value.trim();
-    const pw = document.getElementById('l-pw').value;
-    if((id.toLowerCase()==='omar' || id==='عمر') && pw==='123') {
+// Eğer 4 saniye içinde veri gelmezse loader'ı zorla kaldır
+setTimeout(hideLoader, 4000);
+
+function hideLoader() {
+    const l = document.getElementById('loader');
+    if(l) l.style.opacity = '0';
+    setTimeout(() => { if(l) l.style.display = 'none'; }, 500);
+}
+
+// 3. Giriş ve Kayıt İşlemleri
+function doLogin() {
+    const id = document.getElementById('log-id').value.trim();
+    const pw = document.getElementById('log-pw').value;
+
+    if((id.toLowerCase()==='omar' || id==='عمر' || id.toLowerCase()==='admin') && pw==='123') {
         me = {id:'admin', name:'الأستاذ عمر', role:'admin'};
     } else {
-        me = Object.values(users).find(u => (u.name===id || u.phone===id) && u.pass===pw);
+        me = Object.values(allUsers).find(u => (u.name===id || u.phone===id) && u.pass===pw);
     }
-    if(me) start(); else toast('خطأ في البيانات');
+
+    if(me) {
+        document.getElementById('auth-w').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('me-name').innerText = me.name;
+        document.getElementById('me-role').innerText = me.role==='admin' ? 'مدير النظام (الأستاذ)' : 'طالب مسجل';
+        document.getElementById('av-txt').innerText = me.name[0];
+        renderUI();
+        toast('تم تسجيل الدخول بنجاح');
+    } else {
+        toast('اسم المستخدم أو كلمة المرور خاطئة!', 'err');
+    }
 }
 
-function reg() {
-    const n = document.getElementById('r-n').value, p = document.getElementById('r-p').value, w = document.getElementById('r-w').value;
-    if(!n || !w) return toast('أكمل البيانات');
+function doReg() {
+    const n = document.getElementById('reg-n').value.trim();
+    const p = document.getElementById('reg-p').value.trim();
+    const w = document.getElementById('reg-w').value;
+
+    if(!n || !w) return toast('يرجى كتابة الاسم وكلمة المرور');
+    
     const uid = 'u' + Date.now();
-    db.ref('users/'+uid).set({id:uid, name:n, phone:p, pass:w, role:'student'})
-    .then(()=>{ toast('تم التسجيل'); shA('l'); });
+    db.ref('users/' + uid).set({
+        id: uid, name: n, phone: p, pass: w, role: 'student'
+    }).then(() => {
+        toast('تم إنشاء الحساب! يمكنك الآن الدخول');
+        switchTab('login');
+    });
 }
 
-function start() {
-    document.getElementById('auth-w').style.display='none';
-    document.getElementById('app').style.display='block';
-    document.getElementById('u-name').innerText = me.name;
-    document.getElementById('u-role').innerText = me.role==='admin'?'أستاذ':'طالب';
-    document.getElementById('av').innerText = me.name[0];
-    render();
-}
-
-function render() {
-    if(!me) return;
-    const isAdm = me.role==='admin';
-    document.getElementById('p-adm').style.display = isAdm?'block':'none';
-    document.getElementById('p-std').style.display = isAdm?'none':'block';
+// 4. Arayüz Güncelleme
+function renderUI() {
+    const isAdm = me.role === 'admin';
+    document.getElementById('view-admin').style.display = isAdm ? 'block' : 'none';
+    document.getElementById('view-student').style.display = isAdm ? 'none' : 'block';
 
     if(isAdm) {
-        const stds = Object.values(users).filter(u => u.role==='student');
-        document.getElementById('st-list').innerHTML = stds.map(u => {
-            const d = stData[u.id] || {rem:0};
-            return <tr><td>${u.name}</td><td><b>${d.rem}</b></td><td><button onclick="att('${u.id}')" style="background:green; color:white; border:none; padding:5px 10px; border-radius:5px">حضر</button></td></tr>;
+        const students = Object.values(allUsers).filter(u => u.role === 'student');
+        
+        // Admin Öğrenci Listesi
+        document.getElementById('list-students').innerHTML = students.map(u => {
+            const data = allStData[u.id] || {rem: 0};
+            return `<tr>
+                <td><b>${u.name}</b></td>
+                <td><span style="color:${data.rem < 2 ? 'red':'green'}; font-weight:bold">${data.rem}</span></td>
+                <td><button onclick="recordAttendance('${u.id}')" style="background:#27ae60; color:white; border:none; padding:6px 12px; border-radius:8px; cursor:pointer;">حضر ✓</button></td>
+            </tr>`;
         }).join('');
-        document.getElementById('hw-s').innerHTML = stds.map(u => <option value="${u.id}">${u.name}</option>).join('');
+
+        // Ödev Gönderim Listesi
+        document.getElementById('hw-target').innerHTML = students.map(u => <option value="${u.id}">${u.name}</option>).join('');
     } else {
-        const d = stData[me.id] || {rem:0, fee:0};
-        document.getElementById('s-rem').innerText = d.rem;
-        document.getElementById('s-fee').innerText = d.fee;
-        const myHw = Object.values(hws).filter(h => h.sid===me.id).reverse();
-        document.getElementById('my-hw').innerHTML = myHw.map(h => <div class="hw-i"><small>${h.date}</small><p>${h.txt}</p></div>).join('');
+        // Öğrenci Paneli Bilgileri
+        const data = allStData[me.id] || {rem: 0, fee: 0};
+        document.getElementById('std-rem').innerText = data.rem;
+        document.getElementById('std-fee').innerText = data.fee + "₺";
+
+        // Öğrenci Ödevleri
+        const myHws = Object.values(allHws).filter(h => h.sid === me.id).reverse();
+        document.getElementById('list-homeworks').innerHTML = myHws.length > 0 
+            ? myHws.map(h => <div class="hw-item"><small style="color:#aaa">${h.date}</small><p style="margin-top:5px; font-weight:600">${h.txt}</p></div>).join('')
+            : '<p style="text-align:center; color:#ccc; padding:20px;">لا توجد واجبات مرسلة حالياً</p>';
     }
 }
 
-function att(id) {
-    const cur = (stData[id] ? stData[id].rem : 0);
-    if(cur <= 0) return toast('لا توجد حصص');
-    db.ref('stData/'+id+'/rem').set(cur - 1);
+// 5. Fonksiyonlar
+function recordAttendance(id) {
+    const currentRem = (allStData[id] ? allStData[id].rem : 0);
+    if(currentRem <= 0) return toast('لا توجد حصص متبقية لهذا الطالب!', 'err');
+    db.ref('stData/' + id + '/rem').set(currentRem - 1);
 }
 
-function setSt() {
-    const id = prompt('أدخل ID الطالب من القائمة (أو سيتم تحسين هذا الزر لاحقاً)');
-    const rem = prompt('عدد الحصص:');
-    const fee = prompt('الرسوم:');
-    if(id && rem) db.ref('stData/'+id).set({rem: parseInt(rem), fee: parseInt(fee)||0});
+function openStSetting() {
+    const id = prompt("أدخل اسم الطالب أو الـ ID (يمكنك نسخه من لوحة التحكم):");
+    if(!id) return;
+    const target = Object.values(allUsers).find(u => u.name === id || u.id === id);
+    if(!target) return toast("لم يتم العثور على الطالب");
+
+    const newRem = prompt("عدد الحصص الجديد:");
+    const newFee = prompt("مبلغ الرسوم:");
+    
+    if(newRem !== null) {
+        db.ref('stData/' + target.id).set({
+            rem: parseInt(newRem),
+            fee: parseInt(newFee) || 0
+        });
+        toast("تم تحديث بيانات " + target.name);
+    }
 }
 
-function sendHw() {
-    const sid = document.getElementById('hw-s').value, txt = document.getElementById('hw-t').value;
-    if(!txt) return;
-    db.ref('hws/'+Date.now()).set({sid, txt, date: new Date().toLocaleDateString('ar-EG')});
-    document.getElementById('hw-t').value = '';
-    toast('تم الإرسال');
+function sendHomework() {
+    const sid = document.getElementById('hw-target').value;
+    const txt = document.getElementById('hw-content').value.trim();
+    if(!txt) return toast('يرجى كتابة نص الواجب');
+
+    const hid = 'h' + Date.now();
+    db.ref('hws/' + hid).set({
+        sid: sid,
+        txt: txt,
+        date: new Date().toLocaleDateString('ar-EG')
+    }).then(() => {
+        document.getElementById('hw-content').value = '';
+        toast('تم إرسال الواجب بنجاح ✓');
+    });
 }
 
-  
-function toast(m) {
-    const t = document.getElementById('toast'); t.innerText = m; t.className = 'show';
-    setTimeout(()=>t.className='', 3000);
+// Yardımcılar
+function toast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.className = 'show';
+    setTimeout(() => t.className = '', 3000);
 }
-function shA(m) {
-    document.getElementById('form-l').style.display = m==='l'?'block':'none';
-    document.getElementById('form-r').style.display = m==='r'?'block':'none';
-    document.querySelectorAll('.tab').forEach((t,i) => t.className = (i===(m==='l'?0:1)?'tab active':'tab'));
+function switchTab(t) {
+    document.getElementById('form-login').style.display = t === 'login' ? 'block' : 'none';
+    document.getElementById('form-reg').style.display = t === 'reg' ? 'block' : 'none';
+    document.getElementById('tab-l').className = 'tab ' + (t==='login'?'active':'');
+    document.getElementById('tab-r').className = 'tab ' + (t==='reg'?'active':'');
 }
-function togS(o) { document.getElementById('side').className = 'sidebar' + (o?' open':''); }
+function togSide(open) {
+    document.getElementById('side').className = 'sidebar' + (open ? ' open' : '');
+}
 </script>
 </body>
 </html>
+
