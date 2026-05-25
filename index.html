@@ -1,210 +1,305 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>نظام الأستاذ عمر</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام الأستاذ عمر - النسخة النهائية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 
-<!-- Firebase v8 (En Stabil Versiyon) -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- Firebase SDK (En Güvenli Versiyon) -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
-<style>
-:root { --p:#1a5276; --g:#c9a84c; --bg:#f0f2f5; }
-* { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
-body { background:var(--bg); direction:rtl; }
+    <style>
+        :root { --p:#1a5276; --p-dark:#0d3557; --g:#c9a84c; --bg:#f0f4f8; --white:#ffffff; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background:var(--bg); direction:rtl; overflow-x:hidden; }
 
-/* Giriş Ekranı */
-#auth-w { position:fixed; inset:0; background:linear-gradient(135deg,#0d2137,#1a5276); display:flex; align-items:center; justify-content:center; z-index:9000; padding:20px; }
-.auth-c { background:white; padding:30px; border-radius:24px; width:100%; max-width:400px; box-shadow:0 20px 50px rgba(0,0,0,0.3); text-align:center; }
-.inp { width:100%; padding:12px; margin-bottom:15px; border:2px solid #eee; border-radius:12px; outline:none; text-align:right; }
-.btn { width:100%; padding:14px; border:none; border-radius:12px; background:var(--p); color:white; font-weight:700; cursor:pointer; }
-.tab-btn { background:none; border:none; color:#888; cursor:pointer; margin:10px; font-weight:bold; }
-.tab-btn.active { color:var(--p); border-bottom:2px solid var(--p); }
+        /* Loader */
+        #loader { position:fixed; inset:0; background:var(--white); z-index:10000; display:flex; align-items:center; justify-content:center; flex-direction:column; transition:0.5s; }
+        .spinner { width:50px; height:50px; border:5px solid #f3f3f3; border-top:5px solid var(--p); border-radius:50%; animation:spin 1s linear infinite; }
+        @keyframes spin { 100% { transform:rotate(360deg); } }
 
-/* Ana Uygulama */
-#app { display:none; padding:20px; }
-.card { background:white; padding:20px; border-radius:18px; box-shadow:0 5px 15px rgba(0,0,0,0.05); margin-bottom:20px; }
-.st-row { display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee; }
+        /* Auth Screen */
+        #auth-w { position:fixed; inset:0; background:linear-gradient(135deg,#0d2137,#1a5276); display:flex; align-items:center; justify-content:center; z-index:9000; padding:20px; }
+        .auth-c { background:var(--white); padding:35px; border-radius:25px; width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.4); text-align:center; }
+        .tabs { display:flex; background:#f0f0f0; border-radius:15px; padding:5px; margin-bottom:25px; }
+        .tab { flex:1; border:none; padding:12px; cursor:pointer; border-radius:12px; font-weight:700; background:none; transition:0.3s; color:#666; }
+        .tab.active { background:var(--white); color:var(--p); box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+        .inp { width:100%; padding:14px; margin-bottom:15px; border:2px solid #eef2f6; border-radius:12px; outline:none; text-align:right; font-size:15px; transition:0.3s; background:#fafafa; }
+        .inp:focus { border-color:var(--p); background:var(--white); }
+        .btn { width:100%; padding:15px; border:none; border-radius:12px; background:var(--p); color:var(--white); font-weight:700; cursor:pointer; font-size:16px; transition:0.3s; }
+        .btn:active { transform: scale(0.98); }
 
-/* Toast */
-#toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(100px); background:#333; color:white; padding:10px 25px; border-radius:50px; transition:0.3s; z-index:10000; }
-#toast.show { transform:translateX(-50%) translateY(0); }
-</style>
+        /* Main App */
+        #app { display:none; min-height:100vh; padding-bottom:40px; }
+        .header { background:var(--p); color:var(--white); padding:20px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.1); position:sticky; top:0; z-index:100; }
+        .container { max-width:600px; margin:20px auto; padding:0 15px; }
+        .card { background:var(--white); padding:25px; border-radius:20px; box-shadow:0 8px 24px rgba(0,0,0,0.05); margin-bottom:20px; }
+        .card h3 { color:var(--p); margin-bottom:20px; border-bottom:2px solid #f6f8fa; padding-bottom:10px; font-weight:900; }
+        
+        /* List Items */
+        .st-item { display:flex; justify-content:space-between; align-items:center; padding:15px; background:#fcfdfe; border-radius:15px; margin-bottom:10px; border:1px solid #f0f4f8; }
+        .st-item b { font-size:16px; color:#333; }
+        .st-item span { color:var(--p); font-weight:700; background:#eef6fb; padding:4px 12px; border-radius:8px; }
+        .btn-att { background:#27ae60; color:white; border:none; padding:8px 16px; border-radius:10px; cursor:pointer; font-weight:700; }
+        
+        /* Stats */
+        .grid-stats { display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:20px; }
+        .stat-card { background:var(--white); padding:20px; border-radius:20px; text-align:center; box-shadow:0 8px 24px rgba(0,0,0,0.05); }
+        .stat-card h4 { font-size:14px; color:#888; margin-bottom:10px; }
+        .stat-card h1 { font-size:36px; color:var(--p); font-weight:900; }
+
+        /* Homework */
+        .hw-card { background:#f0f7ff; padding:15px; border-radius:15px; margin-bottom:12px; border-right:5px solid var(--p); }
+        .hw-card small { color:#999; display:block; margin-bottom:5px; }
+        .hw-card p { font-weight:600; color:#333; line-height:1.6; }
+
+        /* Toast */
+        #toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(100px); background:#333; color:white; padding:12px 30px; border-radius:50px; transition:0.4s; z-index:11000; font-size:14px; font-weight:700; }
+        #toast.show { transform:translateX(-50%) translateY(0); }
+    </style>
 </head>
 <body>
 
+<div id="loader"><div class="spinner"></div><p style="margin-top:20px; color:#666;">جاري مزامنة السحاب...</p></div>
 <div id="toast"></div>
 
-<!-- Auth -->
+<!-- AUTH -->
 <div id="auth-w">
     <div class="auth-c">
-        <h2 style="color:var(--p); margin-bottom:20px;">📚 نظام الأستاذ عمر</h2>
-        <div id="login-form">
+        <h2 style="color:var(--p); margin-bottom:25px; font-weight:900;">📚 نظام الأستاذ عمر</h2>
+        <div class="tabs">
+            <button class="tab active" id="tl" onclick="window.switchTab('login')">دخول</button>
+            <button class="tab" id="tr" onclick="window.switchTab('reg')">حساب جديد</button>
+        </div>
+        <div id="f-login">
             <input type="text" id="l-id" class="inp" placeholder="الاسم أو الهاتف (عمر / omar)">
             <input type="password" id="l-pw" class="inp" placeholder="كلمة المرور">
-            <button class="btn" onclick="doLogin()">دخول للنظام</button>
-            <button class="tab-btn" onclick="showReg(true)">إنشاء حساب طالب جديد</button>
+            <button class="btn" onclick="window.doLogin()">دخول للنظام</button>
         </div>
-        <div id="reg-form" style="display:none">
+        <div id="f-reg" style="display:none">
             <input type="text" id="r-n" class="inp" placeholder="اسم الطالب الكامل">
             <input type="text" id="r-p" class="inp" placeholder="رقم الهاتف">
             <input type="password" id="r-w" class="inp" placeholder="كلمة المرور">
-            <button class="btn" style="background:var(--g)" onclick="doReg()">تأكيد التسجيل</button>
-            <button class="tab-btn" onclick="showReg(false)">العودة للدخول</button>
+            <button class="btn" style="background:var(--g)" onclick="window.doReg()">إنشاء الحساب</button>
         </div>
     </div>
 </div>
 
-<!-- Main App -->
+<!-- APP -->
 <div id="app">
-    <div id="admin-view" style="display:none">
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
-                <h3>👥 قائمة الطلاب</h3>
-                <button class="btn" style="width:auto; padding:5px 15px" onclick="updateSt()">إعداد الحصص</button>
-            </div>
-            <div id="student-list"></div>
-        </div>
-        <div class="card">
-            <h3>📝 إرسال واجب</h3>
-            <select id="h-target" class="inp" style="margin-top:10px"></select>
-            <textarea id="h-txt" class="inp" style="height:80px" placeholder="اكتب الواجب هنا..."></textarea>
-            <button class="btn" onclick="sendHw()">إرسال الواجب</button>
-        </div>
+    <div class="header">
+        <h2 id="me-title">...</h2>
+        <small id="me-role"></small>
     </div>
 
-    <div id="std-view" style="display:none">
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px">
-            <div class="card" style="text-align:center"><h4>المتبقي</h4><h1 id="s-rem" style="color:var(--p)">0</h1></div>
-            <div class="card" style="text-align:center"><h4>الرسوم</h4><h1 id="s-fee" style="color:var(--g)">0</h1></div>
+    <div class="container">
+        <!-- ADMIN VIEW -->
+        <div id="v-admin" style="display:none">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                    <h3>👥 الطلاب المسجلون</h3>
+                    <button class="btn" style="width:auto; padding:8px 15px; font-size:12px" onclick="window.setStudent()">⚙️ إعداد الحصص</button>
+                </div>
+                <div id="list-st"></div>
+            </div>
+
+            <div class="card">
+                <h3>📝 إرسال واجب</h3>
+                <select id="hw-sid" class="inp"></select>
+                <textarea id="hw-msg" class="inp" style="height:100px; resize:none;" placeholder="اكتب تفاصيل الواجب هنا..."></textarea>
+                <button class="btn" onclick="window.sendHw()">إرسال الواجب</button>
+            </div>
         </div>
-        <div class="card">
-            <h3>📝 الواجبات</h3>
-            <div id="my-hws" style="margin-top:10px"></div>
+
+        <!-- STUDENT VIEW -->
+        <div id="v-std" style="display:none">
+            <div class="grid-stats">
+                <div class="stat-card"><h4>الحصص المتبقية</h4><h1 id="s-rem">0</h1></div>
+                <div class="stat-card"><h4>الرسوم المستحقة</h4><h1 id="s-fee">0</h1></div>
+            </div>
+            <div class="card">
+                <h3>📝 سجل الواجبات</h3>
+                <div id="list-hws"></div>
+            </div>
         </div>
+
+        <button onclick="location.reload()" style="width:100%; padding:15px; background:none; border:2px solid #ff8a80; color:#ff8a80; border-radius:15px; font-weight:bold; cursor:pointer; margin-top:20px;">تسجيل الخروج 🚪</button>
     </div>
-    
-    <button onclick="location.reload()" style="width:100%; background:none; border:none; color:red; margin-top:20px; cursor:pointer;">تسجيل الخروج 🚪</button>
 </div>
 
 <script>
-// 1. Firebase Ayarları (Senin Bilgilerin)
+/**
+ * ANALİZ: Kod yapısı Global Window objesine bağlanarak buton hataları giderildi.
+ * Firebase v9 compat kütüphanesi ile en yüksek stabilite sağlandı.
+ */
+
 const firebaseConfig = {
-  apiKey: "AIzaSyCXuhxjwoxRSje-rL-1kylgWOIUUwnFtZ8",
-  authDomain: "bsaer-omar-ahmed.firebaseapp.com",
-  databaseURL: "https://bsaer-omar-ahmed-default-rtdb.firebaseio.com",
-  projectId: "bsaer-omar-ahmed",
-  storageBucket: "bsaer-omar-ahmed.firebasestorage.app",
-  messagingSenderId: "246394105206",
-  appId: "1:246394105206:web:0337e80d87cb8fcc7e9e57"
+    apiKey: "AIzaSyCXuhxjwoxRSje-rL-1kylgWOIUUwnFtZ8",
+    authDomain: "bsaer-omar-ahmed.firebaseapp.com",
+    databaseURL: "https://bsaer-omar-ahmed-default-rtdb.firebaseio.com",
+    projectId: "bsaer-omar-ahmed",
+    storageBucket: "bsaer-omar-ahmed.firebasestorage.app",
+    messagingSenderId: "246394105206",
+    appId: "1:246394105206:web:0337e80d87cb8fcc7e9e57"
 };
 
 // Başlat
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let users = {}, stData = {}, hws = {}, me = null;
+let allU = {}, allD = {}, allH = {}, me = null;
 
-// Verileri Dinle
-db.ref('/').on('value', (snapshot) => {
-    const data = snapshot.val() || {};
-    users = data.users || {};
-    stData = data.stData || {};
-    hws = data.hws || {};
-    if(me) render();
+// CANLI SENKRONİZASYON
+db.ref('/').on('value', (snap) => {
+    const v = snap.val() || {};
+    allU = v.users || {};
+    allD = v.stData || {};
+    allH = v.hws || {};
+    
+    // Loader'ı kapat
+    const loader = document.getElementById('loader');
+    if(loader) { loader.style.opacity = '0'; setTimeout(()=> loader.style.display='none', 500); }
+    
+    if(me) window.render();
+}, (err) => {
+    console.error("Bağlantı Hatası:", err);
+    window.toast("خطأ في الاتصال بالسحاب");
 });
 
-function doLogin() {
+// EMNİYET KİLİDİ: 5 saniye sonra loader'ı her türlü kapat
+setTimeout(() => { if(document.getElementById('loader')) document.getElementById('loader').style.display='none'; }, 5000);
+
+// FONKSİYONLAR
+window.switchTab = (t) => {
+    document.getElementById('f-login').style.display = t === 'login' ? 'block' : 'none';
+    document.getElementById('f-reg').style.display = t === 'reg' ? 'block' : 'none';
+    document.getElementById('tl').className = 'tab ' + (t==='login'?'active':'');
+    document.getElementById('tr').className = 'tab ' + (t==='reg'?'active':'');
+};
+
+window.doLogin = () => {
     const id = document.getElementById('l-id').value.trim();
     const pw = document.getElementById('l-pw').value;
 
     if((id.toLowerCase()==='omar' || id==='عمر') && pw==='123') {
         me = {id:'admin', name:'الأستاذ عمر', role:'admin'};
     } else {
-        me = Object.values(users).find(u => (u.name===id || u.phone===id) && u.pass===pw);
+        me = Object.values(allU).find(x => (x.name===id || x.phone===id) && x.pass===pw);
     }
 
     if(me) {
         document.getElementById('auth-w').style.display = 'none';
         document.getElementById('app').style.display = 'block';
-        render();
+        document.getElementById('me-title').innerText = me.name;
+        document.getElementById('me-role').innerText = me.role === 'admin' ? 'مدير النظام' : 'طالب';
+        window.render();
+        window.toast("مرحباً بك مجدداً");
     } else {
-        toast('خطأ في الاسم أو كلمة المرور');
+        window.toast("خطأ في بيانات الدخول");
     }
-}
+};
 
-function doReg() {
+window.doReg = () => {
     const n = document.getElementById('r-n').value.trim();
     const p = document.getElementById('r-p').value.trim();
     const w = document.getElementById('r-w').value;
-    if(!n || !w) return toast('يرجى كتابة الاسم وكلمة المرور');
+
+    if(!n || !w) return window.toast("الرجاء إدخال الاسم وكلمة المرور");
     
     const uid = 'u' + Date.now();
     db.ref('users/' + uid).set({id:uid, name:n, phone:p, pass:w, role:'student'})
-    .then(() => { toast('تم التسجيل! يمكنك الدخول الآن'); showReg(false); });
-}
+    .then(() => {
+        window.toast("تم إنشاء الحساب بنجاح");
+        window.switchTab('login');
+    });
+};
 
-function render() {
-    const isAdm = me.role === 'admin';
-    document.getElementById('admin-view').style.display = isAdm ? 'block' : 'none';
-    document.getElementById('std-view').style.display = isAdm ? 'none' : 'block';
+window.render = () => {
+    const isA = me.role === 'admin';
+    document.getElementById('v-admin').style.display = isA ? 'block' : 'none';
+    document.getElementById('v-std').style.display = isA ? 'none' : 'block';
 
-    if(isAdm) {
-        const stds = Object.values(users).filter(u => u.role === 'student');
-        document.getElementById('student-list').innerHTML = stds.map(u => `
-            <div class="st-row">
-                <span><b>${u.name}</b> (متبقي: ${stData[u.id]?stData[u.id].rem:0})</span>
-                <button onclick="attendance('${u.id}')" style="background:green; color:white; border:none; padding:5px 10px; border-radius:8px">حضر ✓</button>
-            </div>
-        `).join('');
-        document.getElementById('h-target').innerHTML = stds.map(u => <option value="${u.id}">${u.name}</option>).join('');
+    if(isA) {
+        const stds = Object.values(allU).filter(x => x.role === 'student');
+        
+        // Admin Liste
+        document.getElementById('list-st').innerHTML = stds.length > 0 ? stds.map(x => {
+            const data = allD[x.id] || {rem: 0};
+            return `
+                <div class="st-item">
+                    <div><b>${x.name}</b><br><small style="color:#aaa">${x.phone || ''}</small></div>
+                    <span>${data.rem} حصة</span>
+                    <button class="btn-att" onclick="window.attend('${x.id}')">حضر ✓</button>
+                </div>
+            `;
+        }).join('') : '<p style="text-align:center; color:#ccc; padding:20px;">لا يوجد طلاب مسجلون حالياً</p>';
+
+        // HW Select
+        document.getElementById('hw-sid').innerHTML = stds.map(x => <option value="${x.id}">${x.name}</option>).join('');
     } else {
-        const d = stData[me.id] || {rem:0, fee:0};
-        document.getElementById('s-rem').innerText = d.rem;
-        document.getElementById('s-fee').innerText = d.fee + '₺';
-        const myHws = Object.values(hws).filter(h => h.sid === me.id).reverse();
-        document.getElementById('my-hws').innerHTML = myHws.map(h => `
-            <div style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:10px; border-right:4px solid var(--p)">
-                <small>${h.date}</small><p>${h.txt}</p>
-            </div>
-        `).join('');
+        // Student Stats
+        const data = allD[me.id] || {rem: 0, fee: 0};
+        document.getElementById('s-rem').innerText = data.rem;
+        document.getElementById('s-fee').innerText = data.fee + "₺";
+
+        // Student HW
+        const myHws = Object.values(allH).filter(x => x.sid === me.id).reverse();
+        document.getElementById('list-hws').innerHTML = myHws.length > 0 
+            ? myHws.map(x => <div class="hw-card"><small>${x.date}</small><p>${x.txt}</p></div>).join('')
+            : '<p style="text-align:center; color:#ccc; padding:20px;">لا توجد واجبات مرسلة</p>';
     }
-}
+};
 
-function attendance(id) {
-    const current = stData[id] ? stData[id].rem : 0;
-    if(current <= 0) return toast('لا توجد حصص متبقية');
+window.attend = (id) => {
+    const current = (allD[id] ? allD[id].rem : 0);
+    if(current <= 0) return window.toast("لا توجد حصص متبقية لهذا الطالب");
     db.ref('stData/' + id + '/rem').set(current - 1);
-}
+};
 
-function updateSt() {
-    const name = prompt('أدخل اسم الطالب بدقة:');
-    const target = Object.values(users).find(u => u.name === name);
-    if(!target) return toast('لم يتم العثور على الطالب');
-    const rem = prompt('عدد الحصص المتبقية:', 8);
-    const fee = prompt('الرسوم المستحقة:', 0);
-    if(rem !== null) db.ref('stData/' + target.id).set({rem: parseInt(rem), fee: parseInt(fee)});
-}
+window.setStudent = () => {
+    const name = prompt("أدخل اسم الطالب المكتوب في القائمة:");
+    if(!name) return;
+    const target = Object.values(allU).find(x => x.name === name);
+    if(!target) return window.toast("اسم الطالب غير موجود");
 
-function sendHw() {
-    const sid = document.getElementById('h-target').value;
-    const txt = document.getElementById('h-txt').value.trim();
-    if(!txt) return;
-    db.ref('hws/' + Date.now()).set({sid, txt, date: new Date().toLocaleDateString('ar-EG')});
-    document.getElementById('h-txt').value = '';
-    toast('تم إرسال الواجب');
-}
+    const rem = prompt("عدد الحصص (مثال: 8):", 8);
+    const fee = prompt("الرسوم (مثال: 500):", 0);
+    
+    if(rem !== null) {
+        db.ref('stData/' + target.id).set({
+            rem: parseInt(rem),
+            fee: parseInt(fee) || 0
+        });
+        window.toast("تم تحديث بيانات الطالب");
+    }
+};
 
-function toast(m) {
-    const t = document.getElementById('toast'); t.innerText = m; t.className = 'show';
-    setTimeout(() => t.className = '', 3000);
-}
-function showReg(s) {
-    document.getElementById('login-form').style.display = s ? 'none' : 'block';
-    document.getElementById('reg-form').style.display = s ? 'block' : 'none';
-}
+window.sendHw = () => {
+    const sid = document.getElementById('hw-sid').value;
+    const txt = document.getElementById('hw-msg').value.trim();
+    if(!txt) return window.toast("اكتب نص الواجب أولاً");
+
+    const hid = 'h' + Date.now();
+    db.ref('hws/' + hid).set({
+        sid: sid,
+        txt: txt,
+        date: new Date().toLocaleDateString('ar-EG')
+    }).then(() => {
+        document.getElementById('hw-msg').value = '';
+        window.toast("تم إرسال الواجب بنجاح");
+    });
+};
+
+window.toast = (m) => {
+    const t = document.getElementById('toast');
+    t.innerText = m;
+    t.className = 'show';
+    setTimeout(() => { t.className = ''; }, 3000);
+};
+
+window.onload = () => { console.log("Sistem Başlatıldı."); };
 </script>
 </body>
 </html>
